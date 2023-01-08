@@ -45,8 +45,8 @@ typedef unsigned char cod;
 #define nchuw 32 // Ts_length / Segments
 #define Ts_values_per_segment 32
 #define Ts_length 256
-#define Leaf_maxnum 64
-#define Leaf_minnum 32
+#define Leaf_maxnum 512
+#define Leaf_minnum 256
 //最小
 #define Leaf_maxnum_rebalance 10
 #define Leaf_minnum_rebalance 5
@@ -68,20 +68,31 @@ static const int sax_offset = ((Cardinality - 1) * (Cardinality - 2)) / 2;
 static int sax_offset_i[Bit_cardinality+1] = {0,0,3,21,105,465,1953,8001,32385};
 static int cardinality_1_i[Bit_cardinality+1] = {0,1,3,7,15,31,63,127,255};
 
-static const size_t saxt_size = sizeof(saxt_type)*Bit_cardinality;
-
-
-static const size_t send_size1 = 1+sizeof(int)*2+sizeof(uint64_t)+saxt_size*2+sizeof(ts_time)*2;
-static const size_t send_size2 = 1+sizeof(int)*3;
-static const size_t send_size2_del = saxt_size*2 + sizeof(ts_time)*2;
-static const size_t send_size2_add = sizeof(uint64_t) + saxt_size*2 + sizeof(ts_time)*2;
-
 typedef struct {
   ts_type ts[Ts_length];
 } ts_only;
 
-typedef struct {
+typedef struct saxt_only_rep{
   saxt_type asaxt[Bit_cardinality];
+
+  bool operator< (const saxt_only_rep& a) const {
+    return *(uint64_t*)asaxt < *(uint64_t*)a.asaxt;
+  }
+  bool operator> (const saxt_only_rep& a) const {
+    return *(uint64_t*)asaxt > *(uint64_t*)a.asaxt;
+  }
+
+  bool operator<= (const saxt_only_rep& a) const {
+    return *(uint64_t*)asaxt <= *(uint64_t*)a.asaxt;
+  }
+  bool operator>= (const saxt_only_rep& a) const {
+    return *(uint64_t*)asaxt >= *(uint64_t*)a.asaxt;
+  }
+
+  bool operator== (const saxt_only_rep& a) const {
+    return *(uint64_t*)asaxt == *(uint64_t*)a.asaxt;
+  }
+
 } saxt_only;
 
 typedef struct {
@@ -93,11 +104,7 @@ typedef struct {
   ts_time tsTime;
 } tsKey;
 
-typedef struct {
-  ts_type ts[Ts_length];
-  ts_time tsTime;
-  saxt_type asaxt[Bit_cardinality];
-} putKey;
+
 
 typedef struct {
   ts_type ts[Ts_length];
@@ -109,10 +116,8 @@ typedef struct {
   aquery_rep rep;
   int k;
   ts_type paa[Segments];
-  saxt_type asaxt[Bit_cardinality];
+  saxt_only asaxt;
 } aquery;
-
-
 
 
 
@@ -130,7 +135,9 @@ typedef struct ares{
 
 typedef std::pair<float, void*> dist_p;
 
-
+static const size_t send_size1 = 1+sizeof(int)*2+sizeof(uint64_t)+sizeof(saxt_only)*2+sizeof(ts_time)*2;
+static const size_t send_size2 = 1+sizeof(int)*3;
+static const size_t send_size2_add = sizeof(uint64_t) + sizeof(saxt_only)*2 + sizeof(ts_time)*2;
 
 
 

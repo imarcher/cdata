@@ -19,7 +19,10 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <zconf.h>
-#include "sax.h"
+#include <algorithm>
+
+#include "sax/include/globals.h"
+#include "sax/include/sax.h"
 
 
 #define PRODUCT "TSutils - Time Series Generator\n\
@@ -130,7 +133,7 @@ void parse_args (int argc, char **argv, int *length, int *number_of_timeseries,
     Generates a set of random time series.
 **/
 void generate_random_timeseries(int length, int number_of_timeseries,
-                                char normalize, int repetition, char * filename, bool issaxt,char * filename1) {
+                                char normalize, int repetition, char * filename, bool issaxt,char * filename1, bool issort) {
     // Initialize random number generation
     const gsl_rng_type * T;
     gsl_rng * r;
@@ -142,8 +145,15 @@ void generate_random_timeseries(int length, int number_of_timeseries,
 
 
     FILE * saxt_file;
-    saxt_type saxt_[Bit_cardinality];
-    if (issaxt) saxt_file = fopen (filename1,"w");
+    saxt_only* saxts;
+    size_t *p;
+    if (issaxt) {
+        saxt_file = fopen (filename1,"w");
+        saxts = (saxt_only*)malloc(sizeof(saxt_only)*number_of_timeseries);
+        memset(saxts, 0, sizeof(saxt_only)*number_of_timeseries);
+        p = (size_t*)malloc(sizeof(size_t)*number_of_timeseries);
+        memset(p, 0, sizeof(size_t)*number_of_timeseries);
+    }
 
     float *ts = (float*)malloc(sizeof(float) * length);
 
@@ -156,9 +166,9 @@ void generate_random_timeseries(int length, int number_of_timeseries,
         {
             fwrite(ts, sizeof(float), length,data_file);
             if (issaxt) {
-                memset(saxt_, 0, sizeof saxt_);
-                saxt_from_ts(ts, saxt_);
-                fwrite(saxt_, sizeof(saxt_type), Bit_cardinality , data_file);
+                saxt_from_ts(ts, saxts[i].asaxt);
+                p[i] = i;
+
             }
 //             for(j=0; j<length; j++) {
 //                 printf ("%g ", ts[j]);
@@ -170,6 +180,18 @@ void generate_random_timeseries(int length, int number_of_timeseries,
         }
     }
     fprintf(stderr, "\n");
+
+    if (issaxt) {
+        if (issort) {
+            std::sort(saxts, saxts + number_of_timeseries + 1);
+        }
+        for (i=1; i<=number_of_timeseries; i+=repetition) {
+            if (i%1000==0)
+            saxt_print(saxts[i]);
+            fwrite(p+i, sizeof(size_t), 1 , saxt_file);
+            fwrite(saxts[i].asaxt, sizeof(saxt_type), Bit_cardinality , saxt_file);
+        }
+    }
 
 
     // Finalize random number generator
@@ -194,7 +216,7 @@ int main(int argc, char **argv) {
     char * filename = "./output.bin";
     char * filename1 = "./saxt.bin";
     bool issaxt = 1;
-
+    bool issort = 1;
 
 //    // Parse command line arguments
 //    parse_args(argc, argv, &length, &number_of_timeseries, &skew_frequency, &normalize,&filename);
@@ -207,7 +229,7 @@ int main(int argc, char **argv) {
         repetition = number_of_timeseries;
     fprintf(stderr, ">> Generating random time series...\n");
     fprintf(stderr, ">> Data Filename: %s\n", filename);
-    generate_random_timeseries(length, number_of_timeseries, normalize, repetition,filename,issaxt,filename1);
+    generate_random_timeseries(length, number_of_timeseries, normalize, repetition,filename,issaxt,filename1,issort);
     fprintf(stderr, ">> Done.\n");
     return 0;
 }
