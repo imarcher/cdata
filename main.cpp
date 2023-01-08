@@ -133,7 +133,7 @@ void parse_args (int argc, char **argv, int *length, int *number_of_timeseries,
     Generates a set of random time series.
 **/
 void generate_random_timeseries(int length, int number_of_timeseries,
-                                char normalize, int repetition, char * filename, bool issaxt,char * filename1, bool issort) {
+                                char normalize, int repetition, char * filename, bool issaxt,char * filename1, bool issort, bool ists) {
     // Initialize random number generation
     const gsl_rng_type * T;
     gsl_rng * r;
@@ -141,6 +141,7 @@ void generate_random_timeseries(int length, int number_of_timeseries,
     T = gsl_rng_default;
     r = gsl_rng_alloc (T);
     FILE * data_file;
+    if (ists)
     data_file = fopen (filename,"w");
 
 
@@ -164,7 +165,7 @@ void generate_random_timeseries(int length, int number_of_timeseries,
 
         for(rep=0; rep<repetition; rep++)
         {
-            fwrite(ts, sizeof(float), length,data_file);
+            if (ists) fwrite(ts, sizeof(float), length,data_file);
             if (issaxt) {
                 saxt_from_ts(ts, saxts[i].asaxt);
                 p[i] = i;
@@ -195,7 +196,7 @@ void generate_random_timeseries(int length, int number_of_timeseries,
 
 
     // Finalize random number generator
-    fclose (data_file);
+    if (ists) fclose (data_file);
     if (issaxt) fclose(saxt_file);
     gsl_rng_free (r);
 }
@@ -207,7 +208,7 @@ int main(int argc, char **argv) {
 
     // Initialize variables
     int length = Ts_length;                 // Length of a single time series
-    int number_of_timeseries = 1e6;   // Number of time series to generate
+    int number_of_timeseries = 1e4;   // Number of time series to generate
 
     // 倾斜度
     float skew_frequency = 0;           // The skew frequency
@@ -215,6 +216,7 @@ int main(int argc, char **argv) {
     char normalize = 1;             // Normalize or not.
     char * filename = "./output.bin";
     char * filename1 = "./saxt.bin";
+    bool ists = 0;
     bool issaxt = 1;
     bool issort = 1;
 
@@ -229,7 +231,7 @@ int main(int argc, char **argv) {
         repetition = number_of_timeseries;
     fprintf(stderr, ">> Generating random time series...\n");
     fprintf(stderr, ">> Data Filename: %s\n", filename);
-    generate_random_timeseries(length, number_of_timeseries, normalize, repetition,filename,issaxt,filename1,issort);
+    generate_random_timeseries(length, number_of_timeseries, normalize, repetition,filename,issaxt,filename1,issort, ists);
     fprintf(stderr, ">> Done.\n");
     return 0;
 }
