@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
 
     // Initialize variables
     int length = Ts_length;                 // Length of a single time series
-    int number_of_timeseries = 1e4;   // Number of time series to generate
+    int number_of_timeseries = 1e6;   // Number of time series to generate
 
     // 倾斜度
     float skew_frequency = 0;           // The skew frequency
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
     char * filename1 = "./saxt.bin";
     bool ists = 0;
     bool issaxt = 1;
-    bool issort = 1;
+    bool issort = 0;
 
 //    // Parse command line arguments
 //    parse_args(argc, argv, &length, &number_of_timeseries, &skew_frequency, &normalize,&filename);
